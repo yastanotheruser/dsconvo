@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+message MessageHeader {
+    enum MessageType {
+        HELLO_REQUEST = 0;
+        HELLO_REPLY = 1;
+        MESSAGE_REQUEST = 2;
+        MESSAGE_BROADCAST = 3;
+        GOODBYE = 4;
+    }
+
+    MessageType type = 1;
+    bytes payload = 2;
+}
+
+message HelloRequestPayload {
+    string username = 1;
+}
+
+message HelloReplyPayload {
+    enum HelloReplyError {
+        OK = 0;
+        BAD_USERNAME = 1;
+        USERNAME_IN_USE = 2;
+        SERVER_LOAD = 3;
+    }
+
+    HelloReplyError result = 1;
+    bytes arg = 2;
+}
+
+message MessageRequestPayload {
+    uint32 seq = 1;
+    string msg = 2;
+}
+
+message MessageBroadcastPayload {
+    string msg = 1;
+    string username = 2;
+}
