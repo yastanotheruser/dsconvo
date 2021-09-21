@@ -1,7 +1,10 @@
 #include "dsconvoserver.h"
 #include <QtDebug>
 #include <QTextStream>
+#include "dsconvocommon.h"
 #include "dsconvoconnection.h"
+
+using DSConvo::SocketErrorInfo;
 
 DSConvoServer::DSConvoServer(const QHostAddress &address, quint16 port,
                              QObject *parent)
@@ -10,8 +13,8 @@ DSConvoServer::DSConvoServer(const QHostAddress &address, quint16 port,
     , address_(address)
     , port_(port)
 {
+    setStatus(Inactive);
     connect(server, SIGNAL(newConnection()), this, SLOT(newConnection()));
-    setStatus(Status::Inactive);
 }
 
 DSConvoServer::~DSConvoServer()
@@ -21,42 +24,17 @@ DSConvoServer::~DSConvoServer()
     }
 }
 
-const QHostAddress &DSConvoServer::address() const
-{
-    return address_;
-}
-
-quint16 DSConvoServer::port() const
-{
-    return port_;
-}
-
-bool DSConvoServer::listening() const
-{
-    return server->isListening();
-}
-
-DSConvoServer::Status DSConvoServer::status() const
-{
-    return status_;
-}
-
-const QVariant &DSConvoServer::statusData() const
-{
-    return statusData_;
-}
-
 bool DSConvoServer::listen()
 {
     qDebug("[DEBUG] DSConvoServer::listen()");
-    setStatus(Status::Waiting);
+    setStatus(Waiting);
     bool ok = server->listen(address_, port_);
 
     if (!ok) {
         SocketErrorInfo errorInfo(server->serverError(), server->errorString());
-        setStatus(Status::Error, QVariant::fromValue(errorInfo));
+        setStatus(Error, QVariant::fromValue(errorInfo));
     } else {
-        setStatus(Status::Listening);
+        setStatus(Listening);
     }
 
     return ok;
@@ -65,20 +43,20 @@ bool DSConvoServer::listen()
 void DSConvoServer::close()
 {
     qDebug("[DEBUG] DSConvoServer::close()");
-    setStatus(Status::Closing);
+    setStatus(Closing);
     server->close();
 
     for (auto *c : clients) {
         c->deleteLater();
     }
 
-    setStatus(Status::Inactive);
+    setStatus(Inactive);
 }
 
 void DSConvoServer::clearError()
 {
-    if (status_ == Status::Error) {
-        setStatus(Status::Inactive);
+    if (status_ == Error) {
+        setStatus(Inactive);
     }
 }
 
@@ -90,33 +68,33 @@ QString DSConvoServer::statusString()
     QTextStream(&addressString) << address_.toString() << ":" << port_;
 
     switch (status_) {
-    case Status::Inactive:
+    case Inactive:
         ts << tr("Inactivo");
         break;
-    case Status::Waiting:
+    case Waiting:
         ts << tr("Iniciando servidor en ") << addressString;
         break;
-    case Status::Error: {
-        SocketErrorInfo errorInfo = qvariant_cast<SocketErrorInfo>(statusData_);
+    case Error: {
+        auto errorInfo = qvariant_cast<SocketErrorInfo>(statusData_);
         ts << tr("Error: ") << errorInfo.second;
         break;
     }
-    case Status::Listening:
+    case Listening:
         ts << tr("Escuchando en ") << addressString;
         break;
-    case Status::Connection:
+    case Connection:
         ts << tr("Conexión desde ") << statusData_.toString();
         break;
-    case Status::Disconnection:
+    case Disconnection:
         ts << tr("Desconexión con ") << statusData_.toString();
         break;
-    case Status::Send:
+    case Send:
         ts << tr("Enviados ") << statusData_.toUInt() << tr(" bytes");
         break;
-    case Status::Recv:
+    case Recv:
         ts << tr("Recibidos ") << statusData_.toUInt() << tr(" bytes");
         break;
-    case Status::Closing:
+    case Closing:
         ts << tr("Terminando servidor");
         break;
     default:
@@ -141,24 +119,24 @@ void DSConvoServer::newConnection()
         return;
     }
 
-    DSConvoConnection *conn = new DSConvoConnection(socket);
+    DSConvoConnection *conn = new DSConvoConnection(socket, this);
     connect(conn, SIGNAL(dataSent(const QByteArray&)), this,
             SLOT(clientDataSent(const QByteArray&)));
     connect(conn, SIGNAL(dataReceived(const QByteArray&)), this,
             SLOT(clientDataReceived(const QByteArray&)));
     connect(conn, SIGNAL(disconnected()), this, SLOT(clientDisconnected()));
     clients.insert(conn);
-    setStatus(Status::Connection, socket->peerAddress().toString());
+    setStatus(Connection, socket->peerAddress().toString());
 }
 
 void DSConvoServer::clientDataSent(const QByteArray &data)
 {
-    setStatus(Status::Send, data.size());
+    setStatus(Send, data.size());
 }
 
 void DSConvoServer::clientDataReceived(const QByteArray &data)
 {
-    setStatus(Status::Recv, data.size());
+    setStatus(Recv, data.size());
 }
 
 void DSConvoServer::clientDisconnected()
@@ -172,5 +150,5 @@ void DSConvoServer::clientDisconnected()
         conn->deleteLater();
     }
 
-    setStatus(Status::Disconnection, conn->socket()->peerAddress().toString());
+    setStatus(Disconnection, conn->socket()->peerAddress().toString());
 }

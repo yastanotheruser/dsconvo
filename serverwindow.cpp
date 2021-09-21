@@ -1,16 +1,17 @@
 #include "serverwindow.h"
-#include "ui_mainwindow.h"
+#include "ui_serverwindow.h"
 #include <QtDebug>
 #include <QAbstractSocket>
+#include "dsconvocommon.h"
 
 ServerWindow::ServerWindow(QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+    , ui(new Ui::ServerWindow)
     , errorMessage(new QMessageBox(this))
     , server(new DSConvoServer)
 {
     ui->setupUi(this);
-    ui->portLineEdit->setText(QString::number(DSConvoServer::DEFAULT_PORT));
+    ui->portLineEdit->setText(QString::number(DSConvo::DEFAULT_PORT));
     errorMessage->setIcon(QMessageBox::Critical);
     errorMessage->setWindowTitle("Error");
     errorMessage->setStandardButtons(QMessageBox::Close);
@@ -50,12 +51,12 @@ void ServerWindow::toggleServer()
 
 void ServerWindow::serverStatusChanged()
 {
-    if (server->status() != DSConvoServer::Status::Error) {
-        statusBar()->showMessage(server->statusString());
+    if (server->status() != DSConvoServer::Error) {
+        ui->statusbar->showMessage(server->statusString());
         return;
     }
 
-    auto errorInfo = qvariant_cast<SocketErrorInfo>(server->statusData());
+    auto errorInfo = qvariant_cast<DSConvo::SocketErrorInfo>(server->statusData());
     QString errorString;
 
     switch (errorInfo.first) {

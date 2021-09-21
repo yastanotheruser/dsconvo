@@ -1,6 +1,8 @@
 syntax = "proto3";
 
-message MessageHeader {
+package DSConvoProtocol;
+
+message DSConvoMessage {
     enum MessageType {
         HELLO_REQUEST = 0;
         HELLO_REPLY = 1;
@@ -26,7 +28,8 @@ message HelloReplyPayload {
     }
 
     HelloReplyError result = 1;
-    bytes arg = 2;
+    string username = 2;
+    bytes arg = 3;
 }
 
 message MessageRequestPayload {

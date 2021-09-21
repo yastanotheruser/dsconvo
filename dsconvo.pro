@@ -9,17 +9,25 @@ CONFIG += c++11
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    clientwindow.cpp \
+    dsconvoclient.cpp \
+    dsconvocommon.cpp \
+    dsconvostream.cpp \
     dsconvoconnection.cpp \
     dsconvoserver.cpp \
+    clientwindow.cpp \
+    serverwindow.cpp \
     main.cpp \
-    serverwindow.cpp
+    protobuf/*.pb.cc
 
 HEADERS += \
-    clientwindow.h \
+    dsconvoclient.h \
+    dsconvocommon.h \
+    dsconvostream.h \
     dsconvoconnection.h \
     dsconvoserver.h \
-    serverwindow.h
+    clientwindow.h \
+    serverwindow.h \
+    protobuf/*.pb.h
 
 FORMS += \
     clientwindow.ui \
@@ -33,15 +41,14 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-protocopy.commands = $(COPY_DIR) -u $$PWD/protobuf $$OUT_PWD
+protobufs.commands = @$(MAKE) -C $$PWD/protobuf -f protobuf.mk
 
-protobufs.commands = @$(MAKE) -C protobuf -f protobuf.mk
-protobufs.depends = protocopy
+protocopy.commands = $(COPY_DIR) $$PWD/protobuf $$OUT_PWD
+protocopy.depends = protobufs
 
 QMAKE_EXTRA_TARGETS += protocopy protobufs
 QMAKE_CLEAN += protobuf/*.pb.*
-PRE_TARGETDEPS += protobufs
+PRE_TARGETDEPS += protocopy
 
-DISTFILES += \
-    protobuf/dsconvo.proto \
-    protobuf/protobuf.mk
+# libprotobuf
+LIBS += -lprotobuf

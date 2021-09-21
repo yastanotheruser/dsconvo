@@ -1,12 +1,12 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#ifndef SERVERWINDOW_H
+#define SERVERWINDOW_H
 
 #include <QMainWindow>
 #include <QMessageBox>
 #include "dsconvoserver.h"
 
 QT_BEGIN_NAMESPACE
-namespace Ui { class MainWindow; }
+namespace Ui { class ServerWindow; }
 QT_END_NAMESPACE
 
 class ServerWindow : public QMainWindow
@@ -18,7 +18,7 @@ public:
     ~ServerWindow();
 
 private:
-    Ui::MainWindow *ui;
+    Ui::ServerWindow *ui;
     QMessageBox *errorMessage;
     DSConvoServer *server;
 

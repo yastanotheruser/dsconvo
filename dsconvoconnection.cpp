@@ -4,8 +4,7 @@
 DSConvoConnection::DSConvoConnection(QTcpSocket *socket, QObject *parent)
     : QObject(parent)
     , socket_(socket)
-    , buffer(new quint8[BUFFER_SIZE])
-    , state(State::LENGTH)
+    , stream(new DSConvoStream(this))
 {
     qDebug("[DEBUG] DSConvoConnection::DSConvoConnection(%p)", socket);
     connect(socket, SIGNAL(disconnected()), this, SIGNAL(disconnected()));
@@ -15,12 +14,6 @@ DSConvoConnection::DSConvoConnection(QTcpSocket *socket, QObject *parent)
 DSConvoConnection::~DSConvoConnection()
 {
     delete socket_;
-    delete[] buffer;
-}
-
-const QTcpSocket *DSConvoConnection::socket() const
-{
-    return socket_;
 }
 
 quint64 DSConvoConnection::send(const QByteArray &data)
@@ -36,4 +29,5 @@ void DSConvoConnection::socketReadyRead()
     qDebug("[DEBUS] DSConvoConnection::socketReadyRead() (data : %s)",
            data.toHex().constData());
     emit dataReceived(data);
+    stream->handleRecvData(data);
 }

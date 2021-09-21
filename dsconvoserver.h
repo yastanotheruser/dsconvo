@@ -7,9 +7,6 @@
 #include <QTcpServer>
 #include "dsconvoconnection.h"
 
-typedef QPair<QAbstractSocket::SocketError, QString> SocketErrorInfo;
-Q_DECLARE_METATYPE(SocketErrorInfo);
-
 class DSConvoServer : public QObject
 {
     Q_OBJECT
@@ -27,15 +24,15 @@ public:
         Closing,
     };
 
-    static constexpr quint16 DEFAULT_PORT = 5500;
-    DSConvoServer(const QHostAddress &address = QHostAddress::AnyIPv4,
-                  quint16 port = DEFAULT_PORT, QObject *parent = nullptr);
+    explicit DSConvoServer(const QHostAddress &address = QHostAddress::AnyIPv4,
+                           quint16 port = DSConvo::DEFAULT_PORT,
+                           QObject *parent = nullptr);
     ~DSConvoServer();
-    const QHostAddress &address() const;
-    quint16 port() const;
-    bool listening() const;
-    Status status() const;
-    const QVariant &statusData() const;
+    inline const QHostAddress &address() const { return address_; }
+    inline quint16 port() const { return port_; }
+    inline bool listening() const { return server->isListening(); }
+    inline Status status() const { return status_; }
+    inline const QVariant &statusData() const { return statusData_; }
     bool listen();
     void close();
     void clearError();
@@ -56,9 +53,10 @@ private:
 
 private slots:
     void newConnection();
-    void clientDataSent(const QByteArray &data);
-    void clientDataReceived(const QByteArray &data);
+    void clientDataSent(const QByteArray&);
+    void clientDataReceived(const QByteArray&);
     void clientDisconnected();
+
 };
 
 #endif // DSCONVOSERVER_H

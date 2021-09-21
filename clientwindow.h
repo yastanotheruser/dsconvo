@@ -2,21 +2,42 @@
 #define CLIENTWINDOW_H
 
 #include <QMainWindow>
+#include <QMessageBox>
+#include <QTcpSocket>
+#include "dsconvoclient.h"
 
-namespace Ui {
-class ClientWindow;
-}
+QT_BEGIN_NAMESPACE
+namespace Ui { class ClientWindow; }
+QT_END_NAMESPACE
 
 class ClientWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    explicit ClientWindow(QWidget *parent = nullptr);
+    ClientWindow(QWidget *parent = nullptr);
     ~ClientWindow();
 
 private:
-    Ui::ClientWindow *ui;
-};
+    enum UiMode {
+        CanConnect,
+        Connecting,
+        CanSend,
+        Disconnecting,
+    };
 
-#endif // CLIENTWINDOW_H
+    void switchUi(UiMode mode);
+    void doConnect();
+    void doDisconnect();
+
+    Ui::ClientWindow *ui;
+    QMessageBox *errorMessage;
+    UiMode uiMode;
+    DSConvoClient *client;
+
+private slots:
+    void toggleConnection();
+    void clientStatusChanged();
+
+};
+#endif
