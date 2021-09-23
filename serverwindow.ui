@@ -7,19 +7,19 @@
     <x>0</x>
     <y>0</y>
     <width>480</width>
-    <height>240</height>
+    <height>320</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>480</width>
-    <height>240</height>
+    <height>320</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>480</width>
-    <height>240</height>
+    <height>320</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -58,6 +58,9 @@
           <property name="text">
            <string/>
           </property>
+          <property name="maxLength">
+           <number>8</number>
+          </property>
          </widget>
         </item>
         <item>
@@ -80,7 +83,18 @@
         <item>
          <widget class="QPlainTextEdit" name="recvPlainTextEdit">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
+          </property>
+          <property name="font">
+           <font>
+            <family>Monospace</family>
+           </font>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+          <property name="maximumBlockCount">
+           <number>32</number>
           </property>
          </widget>
         </item>
@@ -88,8 +102,11 @@
       </item>
       <item>
        <layout class="QHBoxLayout" name="sendLayout">
+        <property name="spacing">
+         <number>6</number>
+        </property>
         <item>
-         <widget class="QTextEdit" name="sendTextEdit">
+         <widget class="QPlainTextEdit" name="sendPlainTextEdit">
           <property name="enabled">
            <bool>false</bool>
           </property>
@@ -108,8 +125,16 @@
           <property name="maximumSize">
            <size>
             <width>16777215</width>
-            <height>40</height>
+            <height>48</height>
            </size>
+          </property>
+          <property name="font">
+           <font>
+            <family>Monospace</family>
+           </font>
+          </property>
+          <property name="placeholderText">
+           <string>Mensaje</string>
           </property>
          </widget>
         </item>

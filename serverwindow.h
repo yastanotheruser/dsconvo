@@ -24,7 +24,9 @@ private:
 
 private slots:
     void toggleServer();
-    void serverStatusChanged();
+    void broadcast();
+    void serverStateChanged();
+    void serverMessaged(const DSConvo::Protocol::MessageBroadcast &m);
 
 };
-#endif // MAINWINDOW_H
+#endif

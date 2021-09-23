@@ -4,15 +4,17 @@
 #include <QObject>
 #include <QVariant>
 #include <QSet>
+#include <QHash>
 #include <QTcpServer>
-#include "dsconvoconnection.h"
+#include <QSqlDatabase>
+#include "dsconvoserverconnection.h"
 
 class DSConvoServer : public QObject
 {
     Q_OBJECT
 
 public:
-    enum Status {
+    enum State {
         Inactive,
         Waiting,
         Error,
@@ -24,39 +26,62 @@ public:
         Closing,
     };
 
-    explicit DSConvoServer(const QHostAddress &address = QHostAddress::AnyIPv4,
-                           quint16 port = DSConvo::DEFAULT_PORT,
-                           QObject *parent = nullptr);
+    static constexpr const char SERVER_USERNAME[] = "dsconvo";
+    explicit DSConvoServer(QObject *parent = nullptr);
     ~DSConvoServer();
+
     inline const QHostAddress &address() const { return address_; }
+    inline void setAddress(const QHostAddress &a) { address_ = a; }
     inline quint16 port() const { return port_; }
+    inline void setPort(quint16 p) { port_ = p; }
     inline bool listening() const { return server->isListening(); }
-    inline Status status() const { return status_; }
-    inline const QVariant &statusData() const { return statusData_; }
+    inline State state() const { return state_; }
+    inline const QVariant &stateData() const { return stateData_; }
+
+    QString stateString() const;
     bool listen();
     void close();
     void clearError();
-    QString statusString();
+    void broadcastMessage(const QString &message);
 
 signals:
-    void statusChanged();
+    void stateChanged();
+    void messaged(const DSConvo::Protocol::MessageBroadcast &m);
 
 private:
-    void setStatus(Status status, const QVariant &data = QVariant::fromValue(nullptr));
+    void setState(State state, const QVariant &data = QVariant::fromValue(nullptr));
+    QString makeDisplayName(const QString &username) const;
+    inline void addUser(const QString &username)
+    {
+        users.insert(username);
+        displayNames.insert(username, makeDisplayName(username));
+    }
+
+    inline bool removeUser(const QString &username)
+    {
+        return users.remove(username) && displayNames.remove(username);
+    }
 
     QTcpServer *server;
-    QHostAddress const address_;
-    quint16 const port_;
-    QSet<DSConvoConnection*> clients;
-    Status status_;
-    QVariant statusData_;
+    QHostAddress address_;
+    quint16 port_;
+    QSet<DSConvoServerConnection*> clients;
+    QSet<QString> users;
+    QHash<QString, QString> displayNames;
+    State state_;
+    QVariant stateData_;
+    QSqlDatabase db;
 
 private slots:
     void newConnection();
     void clientDataSent(const QByteArray&);
     void clientDataReceived(const QByteArray&);
     void clientDisconnected();
+    void clientHelloRequested(QString &u, DSConvoServerConnection::HelloReplyError *r);
+    void clientHelloAccepted();
+    void clientMessageAccepted(const QString &m);
+    void clientFarewellSent();
 
 };
 
-#endif // DSCONVOSERVER_H
+#endif

@@ -4,14 +4,14 @@
 #include <QObject>
 #include <QTcpSocket>
 #include <QHostAddress>
-#include "dsconvoconnection.h"
+#include "dsconvoclientconnection.h"
 
 class DSConvoClient : public QObject
 {
     Q_OBJECT
 
 public:
-    enum Status {
+    enum State {
         Inactive,
         Error,
         Connecting,
@@ -24,26 +24,28 @@ public:
     inline void setAddress(const QHostAddress &a) { address_ = a; }
     inline quint16 port() const { return port_; }
     inline void setPort(quint16 p) { port_ = p; }
-    inline Status status() const { return status_; }
-    inline const QVariant &statusData() const { return statusData_; }
+    inline State state() const { return state_; }
+    inline const QVariant &stateData() const { return stateData_; }
     inline const QTcpSocket *socket() const { return socket_; }
+    inline DSConvoClientConnection *clientConnection() const { return clientConn; }
+
     void clientConnect();
     void clientDisconnect();
     void clearError();
-    QString statusString();
+    QString stateString();
 
 signals:
-    void statusChanged();
+    void stateChanged();
 
 private:
-    void setStatus(Status status, const QVariant &data = QVariant::fromValue(nullptr));
+    void setState(State state, const QVariant &data = QVariant::fromValue(nullptr));
 
     QTcpSocket *socket_;
-    DSConvoConnection *dsconn;
+    DSConvoClientConnection *clientConn;
     QHostAddress address_;
     quint16 port_;
-    Status status_;
-    QVariant statusData_;
+    State state_;
+    QVariant stateData_;
 
 private slots:
     void socketConnected();
@@ -52,4 +54,4 @@ private slots:
 
 };
 
-#endif // DSCONVOCLIENT_H
+#endif

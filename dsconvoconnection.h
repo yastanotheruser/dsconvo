@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QTcpSocket>
+#include "dsconvocommon.h"
 #include "dsconvostream.h"
 
 class DSConvoConnection : public QObject
@@ -11,7 +12,7 @@ class DSConvoConnection : public QObject
 
 public:
     explicit DSConvoConnection(QTcpSocket *socket, QObject *parent = nullptr);
-    ~DSConvoConnection();
+    virtual ~DSConvoConnection();
     inline const QTcpSocket *socket() const { return socket_; }
 
 signals:
@@ -19,14 +20,19 @@ signals:
     void dataReceived(const QByteArray &data);
     void disconnected();
 
-private:
+protected:
     quint64 send(const QByteArray &data);
     QTcpSocket *socket_;
     DSConvoStream *const stream;
+
+protected slots:
+    virtual void streamMessageParsed(DSConvoStream::ParsedMessage&)
+    {
+    }
 
 private slots:
     void socketReadyRead();
 
 };
 
-#endif // DSCONVOCONNECTION_H
+#endif

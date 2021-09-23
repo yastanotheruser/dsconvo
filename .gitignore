@@ -73,3 +73,6 @@ Thumbs.db
 
 # protoc compiler output
 *.pb.*
+
+# sqlite database
+users.sqlite

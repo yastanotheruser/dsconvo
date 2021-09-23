@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include <sstream>
-#include "dsconvocommon.h"
+#include "dsconvoprotocol.h"
 #include "protobuf/dsconvo.pb.h"
 
 class DSConvoStream : public QObject
@@ -12,11 +12,12 @@ class DSConvoStream : public QObject
 
 public:
     using MessageType = DSConvoProtocol::DSConvoMessage::MessageType;
+    using ParsedMessage = DSConvo::Protocol::ParsedMessage;
     explicit DSConvoStream(QObject *parent = nullptr);
     void handleRecvData(const QByteArray &data);
 
 signals:
-    void messageParsed(const DSConvo::Protocol::ParsedMessage&);
+    void messageParsed(DSConvoStream::ParsedMessage&);
 
 private:
     enum State {

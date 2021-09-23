@@ -4,11 +4,12 @@ package DSConvoProtocol;
 
 message DSConvoMessage {
     enum MessageType {
-        HELLO_REQUEST = 0;
-        HELLO_REPLY = 1;
-        MESSAGE_REQUEST = 2;
-        MESSAGE_BROADCAST = 3;
-        GOODBYE = 4;
+        INVALID = 0;
+        HELLO_REQUEST = 1;
+        HELLO_REPLY = 2;
+        MESSAGE_REQUEST = 3;
+        MESSAGE_BROADCAST = 4;
+        GOODBYE = 5;
     }
 
     MessageType type = 1;
@@ -21,23 +22,25 @@ message HelloRequestPayload {
 
 message HelloReplyPayload {
     enum HelloReplyError {
-        OK = 0;
-        BAD_USERNAME = 1;
-        USERNAME_IN_USE = 2;
-        SERVER_LOAD = 3;
+        INVALID = 0;
+        OK = 1;
+        BAD_USERNAME = 2;
+        USERNAME_IN_USE = 3;
+        SERVER_LOAD = 4;
     }
 
     HelloReplyError result = 1;
     string username = 2;
-    bytes arg = 3;
 }
 
 message MessageRequestPayload {
-    uint32 seq = 1;
-    string msg = 2;
+    string msg = 1;
 }
 
 message MessageBroadcastPayload {
-    string msg = 1;
-    string username = 2;
+    string username = 1;
+    string display_name = 2;
+    string msg = 3;
 }
+
+// vim: set ts=4 sts=4 sw=4 et cin:

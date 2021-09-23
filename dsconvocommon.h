@@ -2,11 +2,10 @@
 #define DSCONVOCOMMON_H
 
 #include <QPair>
-#include <QByteArray>
 #include <QHostAddress>
+#include <QObject>
+#include <QPlainTextEdit>
 #include <QApplication>
-#include <istream>
-#include "protobuf/dsconvo.pb.h"
 
 namespace DSConvo {
 
@@ -14,34 +13,46 @@ typedef QPair<QHostAddress, quint16> AddressPort;
 typedef QPair<QAbstractSocket::SocketError, QString> SocketErrorInfo;
 
 struct CommandLineOptions {
-    QString *address;
+    const QString *address;
+    const QString *database;
     bool server;
 };
 
 constexpr quint16 DEFAULT_PORT = 5500;
+constexpr quint16 MAX_MESSAGE = 255;
 extern CommandLineOptions cmdline;
 extern AddressPort serverAddress;
 
+QString normalizeText(const QString&);
 void initialize(QApplication &app);
+bool validatePort(const QString&, quint16* = nullptr);
 bool validateAddressPort(const QString&, AddressPort&, bool = false);
 QString addressPortToString(const AddressPort&);
 
-namespace Protocol {
+namespace QtUtil {
 
-typedef QPair<DSConvoProtocol::DSConvoMessage::MessageType, const void*> ParsedMessage;
+class PlainTextEditLimit : public QObject
+{
+    Q_OBJECT
 
-auto const INVALID_PAYLOAD = reinterpret_cast<const google::protobuf::Message*>(-1);
+public:
+    explicit PlainTextEditLimit(int limit, QPlainTextEdit *parent);
+    inline int limit() const { return limit_; }
+    inline void setLimit(int l) { limit_ = l; }
 
-bool parseMessage(std::istream*, ParsedMessage&);
+signals:
+    void limitExceeded(bool*);
 
-QByteArray makeHelloRequest(const std::string&);
-QByteArray makeHelloReply(DSConvoProtocol::HelloReplyPayload::HelloReplyError,
-                          const std::string&, const std::string& = std::string());
-QByteArray makeMessageRequest(uint32_t, const std::string&);
-QByteArray makeMessageBroadcast(const std::string&, const std::string&);
-QByteArray makeGoodbye();
+private:
+    int limit_;
 
-}
+private slots:
+    void parentTextChanged();
 
-}
+};
+
+} // namespace DSConvo::QtUtil
+
+} // namespace DSConvo
+
 #endif

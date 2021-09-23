@@ -6,18 +6,18 @@ using DSConvo::SocketErrorInfo;
 DSConvoClient::DSConvoClient(QObject *parent)
     : QObject(parent)
     , socket_(nullptr)
-    , dsconn(nullptr)
+    , clientConn(nullptr)
     , address_(QHostAddress::LocalHost)
     , port_(DSConvo::DEFAULT_PORT)
 {
-    setStatus(Inactive);
+    setState(Inactive);
 }
 
 void DSConvoClient::clientConnect()
 {
     qDebug("[DEBUG] DSConvoClient::clientConnect()");
     Q_ASSERT(socket_ == nullptr);
-    setStatus(Connecting);
+    setState(Connecting);
     socket_ = new QTcpSocket(this);
     socket_->connectToHost(address_, port_);
     connect(socket_, SIGNAL(connected()), this, SLOT(socketConnected()));
@@ -30,28 +30,28 @@ void DSConvoClient::clientDisconnect()
 {
     qDebug("[DEBUG] DSConvoClient::clientDisconnect()");
     Q_ASSERT(socket_ != nullptr);
-    setStatus(Disconnecting);
+    setState(Disconnecting);
     socket_->disconnectFromHost();
 }
 
 void DSConvoClient::clearError()
 {
-    if (status_ == Error) {
-        setStatus(Inactive);
+    if (state_ == Error) {
+        setState(Inactive);
     }
 }
 
-QString DSConvoClient::statusString()
+QString DSConvoClient::stateString()
 {
     QString res;
     QTextStream ts(&res);
 
-    switch (status_) {
+    switch (state_) {
     case Inactive:
         ts << tr("Inactivo");
         break;
     case Error: {
-        auto errorInfo = qvariant_cast<SocketErrorInfo>(statusData_);
+        auto errorInfo = qvariant_cast<SocketErrorInfo>(stateData_);
         ts << tr("Error: ") << errorInfo.second;
         break;
     }
@@ -69,25 +69,25 @@ QString DSConvoClient::statusString()
     return res;
 }
 
-void DSConvoClient::setStatus(DSConvoClient::Status status, const QVariant &data)
+void DSConvoClient::setState(DSConvoClient::State state, const QVariant &data)
 {
-    status_ = status;
-    statusData_ = data;
-    emit statusChanged();
+    state_ = state;
+    stateData_ = data;
+    emit stateChanged();
 }
 
 void DSConvoClient::socketConnected()
 {
-    dsconn = new DSConvoConnection(socket_, this);
-    setStatus(Connected);
+    clientConn = new DSConvoClientConnection(socket_, this);
+    setState(Connected);
 }
 
 void DSConvoClient::socketDisconnected()
 {
-    dsconn->deleteLater();
-    dsconn = nullptr;
+    clientConn->deleteLater();
+    clientConn = nullptr;
     socket_ = nullptr;
-    setStatus(Inactive);
+    setState(Inactive);
 }
 
 void DSConvoClient::socketError(QAbstractSocket::SocketError error)
@@ -107,6 +107,6 @@ void DSConvoClient::socketError(QAbstractSocket::SocketError error)
         break;
     }
 
-    SocketErrorInfo errorInfo(socket_->error(), errorString);
-    setStatus(Error, QVariant::fromValue(errorInfo));
+    SocketErrorInfo errorInfo(error, errorString);
+    setState(Error, QVariant::fromValue(errorInfo));
 }

@@ -1,4 +1,4 @@
-QT       += core gui network
+QT       += core gui network sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -10,7 +10,11 @@ CONFIG += c++11
 
 SOURCES += \
     dsconvoclient.cpp \
+    dsconvoclientconnection.cpp \
     dsconvocommon.cpp \
+    dsconvodatabase.cpp \
+    dsconvoprotocol.cpp \
+    dsconvoserverconnection.cpp \
     dsconvostream.cpp \
     dsconvoconnection.cpp \
     dsconvoserver.cpp \
@@ -21,7 +25,11 @@ SOURCES += \
 
 HEADERS += \
     dsconvoclient.h \
+    dsconvoclientconnection.h \
     dsconvocommon.h \
+    dsconvodatabase.h \
+    dsconvoprotocol.h \
+    dsconvoserverconnection.h \
     dsconvostream.h \
     dsconvoconnection.h \
     dsconvoserver.h \
@@ -47,7 +55,6 @@ protocopy.commands = $(COPY_DIR) $$PWD/protobuf $$OUT_PWD
 protocopy.depends = protobufs
 
 QMAKE_EXTRA_TARGETS += protocopy protobufs
-QMAKE_CLEAN += protobuf/*.pb.*
 PRE_TARGETDEPS += protocopy
 
 # libprotobuf

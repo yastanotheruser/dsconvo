@@ -1,41 +1,54 @@
 #include "dsconvocommon.h"
 #include <QRegularExpression>
 #include <QCommandLineParser>
-
-#define PARSE_PAYLOAD(klass, from, into, fallback) \
-    do { \
-        klass *payload = new klass(); \
-        if (payload->ParseFromString((from))) { \
-            (into) = payload; \
-        } else { \
-            (into) = (fallback); \
-        } \
-    } while (0);
+#include "dsconvodatabase.h"
 
 Q_DECLARE_METATYPE(::DSConvo::SocketErrorInfo);
 
 namespace {
 
-using DSConvoMessage = DSConvoProtocol::DSConvoMessage;
-
 void parseCommandLine(const QApplication&);
 void validateCommandLine();
-inline QByteArray makeMessage(DSConvoMessage::MessageType,
-                              const google::protobuf::Message&);
 
-}
+} // anonymous
 
 namespace DSConvo {
 
 CommandLineOptions cmdline;
 AddressPort serverAddress(QHostAddress::AnyIPv4, DEFAULT_PORT);
 
+QString normalizeText(const QString &t)
+{
+    return t.trimmed();
+}
+
 void initialize(QApplication &app)
 {
     QApplication::setApplicationName("dsconvo");
-    QApplication::setApplicationDisplayName("DSConvo chat");
+    QApplication::setApplicationDisplayName("dsconvo chat");
     QApplication::setApplicationVersion("0.1");
     parseCommandLine(app);
+    DSConvo::Database::initializeDatabase(*cmdline.database);
+}
+
+bool validatePort(const QString &portString, quint16 *into)
+{
+    if (!portString.isEmpty()) {
+        bool ok;
+        quint32 port32 = portString.toUInt(&ok, 10);
+
+        if (!ok || port32 == 0 || port32 > 65535) {
+            return false;
+        }
+
+        if (into != nullptr) {
+            *into = port32 & 0xffff;
+        }
+    } else if (into != nullptr) {
+        *into = DSConvo::DEFAULT_PORT;
+    }
+
+    return true;
 }
 
 bool validateAddressPort(const QString &addrPortString,
@@ -58,17 +71,8 @@ bool validateAddressPort(const QString &addrPortString,
         return false;
     }
 
-    if (!portString.isEmpty()) {
-        bool ok;
-        quint32 port32 = portString.toUInt(&ok, 10);
-
-        if (!ok || port32 == 0 || port32 > 65535) {
-            return false;
-        }
-
-        port = port32 & 0xffff;
-    } else {
-        port = DSConvo::DEFAULT_PORT;
+    if (!validatePort(portString, &port)) {
+        return false;
     }
 
     if (!addressString.isEmpty()) {
@@ -93,87 +97,41 @@ QString addressPortToString(const AddressPort &addrPort)
     return res;
 }
 
-namespace Protocol {
+namespace QtUtil {
 
-bool parseMessage(std::istream *is, ParsedMessage &into)
+PlainTextEditLimit::PlainTextEditLimit(int limit, QPlainTextEdit *parent)
+    : QObject(parent)
+    , limit_(limit)
 {
-    using namespace DSConvoProtocol;
+    connect(parent, SIGNAL(textChanged()), this, SLOT(parentTextChanged()));
+}
 
-    DSConvoMessage message;
-    if (!message.ParseFromIstream(is)) {
-        qDebug("[DEBUG] [DSConvo::Protocol::parseMessage()] bad message");
-        return false;
+void PlainTextEditLimit::parentTextChanged()
+{
+    auto *p = qobject_cast<QPlainTextEdit*>(parent());
+    Q_ASSERT(p != nullptr);
+    QString text = p->toPlainText();
+
+    if (limit_ <= 0 || text.length() <= limit_) {
+        return;
     }
 
-    DSConvoMessage::MessageType type = message.type();
-    const std::string &data = message.payload();
-    const google::protobuf::Message *ptr = nullptr;
+    bool allow = false;
+    emit limitExceeded(&allow);
 
-    switch (type) {
-    case DSConvoMessage::HELLO_REQUEST:
-        PARSE_PAYLOAD(HelloRequestPayload, data, ptr, INVALID_PAYLOAD);
-        break;
-    case DSConvoMessage::HELLO_REPLY:
-        PARSE_PAYLOAD(HelloReplyPayload, data, ptr, INVALID_PAYLOAD);
-        break;
-    case DSConvoMessage::MESSAGE_REQUEST:
-        PARSE_PAYLOAD(MessageRequestPayload, data, ptr, INVALID_PAYLOAD);
-        break;
-    case DSConvoMessage::MESSAGE_BROADCAST:
-        PARSE_PAYLOAD(MessageBroadcastPayload, data, ptr, INVALID_PAYLOAD);
-        break;
-    default:
-        // unreachable?
-        return false;
+    if (allow) {
+        return;
     }
 
-    if (ptr == INVALID_PAYLOAD) {
-        return false;
-    }
-
-    into.first = type;
-    into.second = ptr;
-    return true;
+    p->setPlainText(text.left(limit_));
+    QTextCursor cursor = p->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    p->setTextCursor(cursor);
 }
 
-QByteArray makeHelloRequest(const std::string &username)
-{
-    DSConvoProtocol::HelloRequestPayload payload;
-    payload.set_username(username);
-    return makeMessage(DSConvoMessage::HELLO_REQUEST, payload);
-}
+} // namespace DSConvo::QtUtil
 
-QByteArray makeHelloReply(DSConvoProtocol::HelloReplyPayload::HelloReplyError result,
-                          const std::string &username, const std::string &arg)
-{
-    DSConvoProtocol::HelloReplyPayload payload;
-    payload.set_result(result);
-    payload.set_username(username);
-    payload.set_arg(arg);
-    return makeMessage(DSConvoMessage::HELLO_REPLY, payload);
-}
-
-QByteArray makeMessageRequest(uint32_t seq, const std::string &msg)
-{
-    DSConvoProtocol::MessageRequestPayload payload;
-    payload.set_seq(seq);
-    payload.set_msg(msg);
-    return makeMessage(DSConvoMessage::MESSAGE_REQUEST, payload);
-}
-
-QByteArray makeMessageBroadcast(const std::string &msg, const std::string &username)
-{
-    DSConvoProtocol::MessageBroadcastPayload payload;
-    payload.set_msg(msg);
-    payload.set_username(username);
-    return makeMessage(DSConvoMessage::MESSAGE_BROADCAST, payload);
-}
-
-QByteArray makeGoodbye();
-
-}
-
-}
+} // namespace DSConvo
 
 namespace {
 
@@ -187,7 +145,14 @@ void parseCommandLine(const QApplication &app)
     parser.addVersionOption();
     parser.addPositionalArgument("address", app.tr("Dirección de escucha o conexión"));
 
-    QCommandLineOption serverOption(QStringList() << "l" << "server", app.tr("Modo servidor"));
+    QCommandLineOption databaseOption(QStringList() << "d" << "database",
+                                      app.tr("Base de datos SQLite3"),
+                                      app.tr("file"));
+    databaseOption.setDefaultValue(DSConvo::Database::DEFAULT_DATABASE);
+    parser.addOption(databaseOption);
+
+    QCommandLineOption serverOption(QStringList() << "l" << "server",
+                                    app.tr("Modo servidor"));
     parser.addOption(serverOption);
 
     parser.process(app);
@@ -197,6 +162,7 @@ void parseCommandLine(const QApplication &app)
         cmdline.address = new QString(args.at(0));
     }
 
+    cmdline.database = new QString(parser.value(databaseOption));
     cmdline.server = parser.isSet(serverOption);
     validateCommandLine();
 }
@@ -220,17 +186,4 @@ void validateCommandLine()
     }
 }
 
-inline QByteArray makeMessage(DSConvoMessage::MessageType type,
-                              const google::protobuf::Message &payload)
-{
-    DSConvoMessage message;
-    std::string payloadBytes;
-    std::string rawMessage;
-    payload.SerializeToString(&payloadBytes);
-    message.set_type(type);
-    message.set_payload(payloadBytes);
-    message.SerializeToString(&rawMessage);
-    return QByteArray::fromStdString(rawMessage);
-}
-
-}
+} // anonymous

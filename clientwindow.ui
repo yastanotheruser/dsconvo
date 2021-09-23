@@ -70,6 +70,9 @@
           <property name="text">
            <string/>
           </property>
+          <property name="maxLength">
+           <number>64</number>
+          </property>
          </widget>
         </item>
         <item>
@@ -103,7 +106,11 @@
          </widget>
         </item>
         <item>
-         <widget class="QLineEdit" name="nameLineEdit"/>
+         <widget class="QLineEdit" name="nameLineEdit">
+          <property name="maxLength">
+           <number>32</number>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>
@@ -112,7 +119,18 @@
         <item>
          <widget class="QPlainTextEdit" name="recvPlainTextEdit">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
+          </property>
+          <property name="font">
+           <font>
+            <family>Monospace</family>
+           </font>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+          <property name="maximumBlockCount">
+           <number>32</number>
           </property>
          </widget>
         </item>
@@ -120,8 +138,11 @@
       </item>
       <item>
        <layout class="QHBoxLayout" name="sendLayout">
+        <property name="spacing">
+         <number>6</number>
+        </property>
         <item>
-         <widget class="QTextEdit" name="sendTextEdit">
+         <widget class="QPlainTextEdit" name="sendPlainTextEdit">
           <property name="enabled">
            <bool>false</bool>
           </property>
@@ -140,8 +161,16 @@
           <property name="maximumSize">
            <size>
             <width>16777215</width>
-            <height>40</height>
+            <height>48</height>
            </size>
+          </property>
+          <property name="font">
+           <font>
+            <family>Monospace</family>
+           </font>
+          </property>
+          <property name="placeholderText">
+           <string>Mensaje</string>
           </property>
          </widget>
         </item>

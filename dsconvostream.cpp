@@ -57,14 +57,14 @@ void DSConvoStream::handleBufferData(int chunkSize)
         qDebug("[DEBUG] DSConvoStream::handleBufferData(%d) "
                "(state = Length ; stateArg = %d)", chunkSize, stateArg);
 
-        if (stateArg == 0) {
+        if (stateArg > 0) {
+            state = Message;
+            io.str(std::string());
+            io.clear();
+        } else {
             qDebug("[DEBUG] [DSConvoStream Length] ignoring empty message");
-            return;
         }
 
-        state = Message;
-        io.str(std::string());
-        io.clear();
         break;
     case Message:
         qDebug("[DEBUG] DSConvoStream::handleBufferData(%d) "
@@ -74,6 +74,7 @@ void DSConvoStream::handleBufferData(int chunkSize)
         if (chunkOffset == chunkSize) {
             qDebug("[DEBUG] [DSConvoStream Message] message received");
             handleMessage();
+            state = Length;
         }
 
         break;
@@ -82,6 +83,8 @@ void DSConvoStream::handleBufferData(int chunkSize)
     if (chunkOffset == chunkSize) {
         bufferOffset = 0;
         chunkOffset = 0;
+    } else if (bufferOffset == BUFFER_SIZE) {
+        bufferOffset = 0;
     }
 }
 
