@@ -4,9 +4,9 @@ pbcxxfiles = $(addsuffix .pb.cc, $(basename $(protofiles)))
 
 .PHONY : all clean
 
-all : $(pbheaders)
+all : $(pbheaders) $(pbcxxfiles)
 clean :
-	rm -f $(pbcxxfiles) $(pbheaders)
+	rm -f $(pbheaders) $(pbcxxfiles)
 
-$(pbheaders) : %.pb.h : %.proto
+$(pbheaders) $(pbcxxfiles) &: $(protofiles)
 	protoc --cpp_out=. $^
